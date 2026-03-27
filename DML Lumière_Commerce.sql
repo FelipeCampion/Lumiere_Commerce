@@ -9,7 +9,7 @@ insert into marcas (nome_marca) values
 ('Giorgio Armani');
 
 -- Inserindo o Catálogo de Perfumes
--- Note: O estoque do Sauvage (ID 1) está baixo (2 unidades) para testarmos a trava.
+-- Note: O estoque do Sauvage (ID 1) está em 2 unidades. Quando a primeira venda ocorrer, o estoque cairá para 1 e o Alerta de Escassez será gerado.
 insert into perfumes (nome, familia_olfativa, concentracao, volume_ml, id_marca, preco_venda, estoque_atual, pais_origem) 
 values 
 ('Sauvage', 'Fougère Amadeirado', 'EDP', 100, 1, 650.00, 2, 'França'),
@@ -28,7 +28,7 @@ values
 -- SIMULAÇÃO DE VENDAS (A mágica das Triggers acontece aqui)
 -- Não informamos 'valor_venda' nem 'data_venda', o banco preenche sozinho!
 
--- Venda 1: Felipe compra um Sauvage
+-- Venda 1: Felipe compra um Sauvage (ESTOQUE VAI PARA 1 - DISPARA ALERTA)
 insert into vendas (id_perfume, id_cliente) values (1, 1);
 
 -- Venda 2: Ana compra um Sauvage (Estoque do ID 1 chega a zero aqui)
@@ -43,7 +43,7 @@ insert into vendas (id_perfume, id_cliente) values (4, 1);
 insert into vendas (id_perfume, id_cliente) values (1, 3);
 
 -- Teste de avaliação (Validação de possibilidade de avaliação)
--- Funciona porque Felipe (ID 1) comprou o Sauvage (ID 1) no passo 4.
+-- Funciona porque Felipe (ID 1) comprou o Sauvage (ID 1) no passo anterior.
 insert into avaliacoes (id_perfume, id_cliente, nota, comentario) 
 values (1, 1, 5, 'Fixação absurda e projeção elegante. Vale cada centavo!');
 
@@ -57,7 +57,8 @@ values (2, 3, 1, 'Não gostei, cheiro comum.');
 -- Executa o fechamento do mês atual (Março de 2026)
 call sp_fechamento_financeiro_mensal(3, 2026);
 
--- Conferência final dos dados
+-- Conferência final dos dados e do alerta automático
 select * from vendas;
 select * from historico_vendas;
+select * from alertas_estoque;
 select id_perfume, nome, estoque_atual from perfumes;
