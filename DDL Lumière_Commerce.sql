@@ -76,6 +76,14 @@ comentario text,
 data_avaliacao timestamp default current_timestamp
 );
 
+create table alertas_estoque(
+id_alerta int auto_increment primary key,
+id_perfume int,
+mensagem varchar(255),
+data_alerta timestamp default current_timestamp,
+status_alerta enum('Pendente', 'Enviado') default 'Pendente'
+);
+
 -- Criação das pontes entre tabelas
 
 alter table clientes
@@ -99,6 +107,9 @@ add constraint fk_HisVen_clien foreign key (id_cliente) references clientes (id_
 alter table avaliacoes
 add constraint fk_ava_per foreign key (id_perfume) references perfumes (id_perfume),
 add constraint fk_ava_clien foreign key (id_cliente) references clientes (id_cliente);
+
+alter table alertas_estoque
+add constraint fk_alert_per foreign key (id_perfume) references perfumes (id_perfume);
 
 -- Criação das triggers
 
@@ -184,6 +195,29 @@ for each row
 begin
     insert into historico_vendas (id_perfume, id_cliente, data_venda)
     values (new.id_perfume, new.id_cliente, curdate());
+end //
+
+delimiter ;
+
+delimiter //
+
+-- Gatilho de alerta automático de compra de perfumes
+create trigger trg_alerta_escassez
+after insert on vendas
+for each row
+begin
+    declare v_estoque_atual int;
+    declare v_nome_perfume varchar(100);
+
+    select estoque_atual, nome into v_estoque_atual, v_nome_perfume
+    from perfumes
+    where id_perfume = new.id_perfume;
+
+    if v_estoque_atual = 1 then
+        insert into alertas_estoque (id_perfume, mensagem)
+        values (new.id_perfume, concat('[ALERTA!]: O perfume "', v_nome_perfume, '" só possui mais 1 unidade em estoque!'));
+    end if;
+
 end //
 
 delimiter ;
